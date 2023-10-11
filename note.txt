@@ -1,0 +1,12 @@
+register 
+method:post
+body:{
+     "email"
+  "username"
+  "password"
+  "confirmPassword"
+  "region"
+}
+
+response :
+success => 200 msg : registration success
