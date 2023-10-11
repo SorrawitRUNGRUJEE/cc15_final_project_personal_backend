@@ -1,9 +1,6 @@
 const express = require('express')
 const createError = require('../utils/create_error')
+const auth_controller = require('../controller/auth_controller')
 const router = express.Router()
-router.post('/register',(req,res,next)=>{
-   const {username} = req.body
-   if(!username) return next(createError("body required",400))
-   res.status(200).json({msg:"test"})
-})
+router.post('/register',auth_controller.register)
 module.exports = router

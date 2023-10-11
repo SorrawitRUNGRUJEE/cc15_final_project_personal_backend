@@ -11,5 +11,4 @@ app.use(express.json())
 app.use('/auth',auth_route)
 app.use(hdl_error)
 app.use(hdl_resource_not_found)
-
 app.listen(port,()=>console.log("server operational at port:",port))
