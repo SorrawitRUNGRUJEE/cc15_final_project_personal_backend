@@ -16,10 +16,11 @@ model User {
   region       Region
   username     String     @unique @db.VarChar(30)
   password     String
-  profileImage String?     @map("profile_image")
-  coverImage   String?     @map("cover_image")
+  profileImage String?    @map("profile_image")
+  coverImage   String?    @map("cover_image")
   createdAt    DateTime   @default(now()) @map("created_at")
   isAdmin      Boolean    @default(false) @map("is_admin")
+  isSuperadmin Boolean    @default(false) @map("is_super_admin")
   Basket       Basket[]
   Order        Order[]
   wishlist     wishlist[]

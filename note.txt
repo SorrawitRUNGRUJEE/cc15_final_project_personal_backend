@@ -10,3 +10,14 @@ body:{
 
 response :
 success => 200 msg : registration success
+
+register 
+method:post
+body:{
+  
+  "username"
+  "password"
+}
+
+response :
+success => 200 msg : access granted, token, user data
