@@ -1,4 +1,5 @@
 register 
+path: '/auth/register'
 method:post
 body:{
      "email"
@@ -12,6 +13,7 @@ response :
 success => 200 msg : registration success
 
 register 
+path: '/auth/login'
 method:post
 body:{
   
