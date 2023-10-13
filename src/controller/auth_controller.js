@@ -38,7 +38,6 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { value, error } = loginSchema.validate(req.body);
-    console.log("here", value);
     if (error) return next(createError(error, 400));
     const user = await prisma.user.findFirst({
       where: {
@@ -48,9 +47,9 @@ exports.login = async (req, res, next) => {
     if (!user) return next(createError("invalid credential", 400));
     const isMatch = await bcrypt.compare(value.password, user.password);
     if (!isMatch) return next(createError("invalid credentials", 400));
-    const payload = user.id;
+    const id = user.id;
     const accessToken = Jwt.sign(
-      { payload },
+      { id },
       process.env.JWT_SECRET_KEY || "kjasbdf",
       { expiresIn: process.env.JWT_EXPIRES }
     );
@@ -60,3 +59,16 @@ exports.login = async (req, res, next) => {
     next(createError(err, 500));
   }
 };
+
+exports.getUser = async (req,res,next) =>{
+  try{
+
+    const {user} = req
+    delete user.password
+    res.json({user:user})
+}
+catch(err){
+    next(createError(err,500))
+}
+
+}
