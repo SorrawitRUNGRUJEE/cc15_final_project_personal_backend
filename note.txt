@@ -12,7 +12,7 @@ body:{
 response :
 success => 200 msg : registration success
 
-register 
+login 
 path: '/auth/login'
 method:post
 body:{
@@ -23,3 +23,83 @@ body:{
 
 response :
 success => 200 msg : access granted, token, user data
+
+
+
+
+addProduct
+
+path: admin/product
+method: post
+body:{
+  "title",
+  "fullDesc",
+  "briefDesc,
+  "price"
+}
+
+
+modifyProduct
+
+path: admin/product
+method: patch
+body : *optional
+:{
+  "id",
+  "title",
+  "fullDesc",
+  "briefDesc,
+  "price"
+}
+
+
+delete Product
+
+path: admin/product
+method: delte
+body : 
+:{
+  "id",
+  "title",
+}
+
+addCategory
+
+path: admin/category
+method: post
+body:{
+  "id",
+  "name"
+}
+
+
+modifyCategory
+
+path: admin/category
+method: patch
+body : *optional
+:{
+  "id",
+  "name",
+  "newName"
+}
+
+delete Category
+path: admin/category
+method: delte
+body : 
+:{
+  "id",
+  "name",
+}
+
+addProductCategory
+
+path admin/product/category
+method post
+body:{
+productId,
+productTitle,
+categoryId,
+categoryName
+}

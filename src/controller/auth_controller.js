@@ -15,7 +15,7 @@ exports.register = async (req, res, next) => {
       },
     });
     if (existEmail) return res.status(400).json({ msg: "email already in used" });
-    if (error) return next(createError(error, 400));
+    
     const existUsername = await prisma.user.findUnique({
       where: {
         username: value.username,

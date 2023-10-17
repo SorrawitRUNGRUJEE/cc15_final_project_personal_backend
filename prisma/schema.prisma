@@ -21,8 +21,8 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   isAdmin      Boolean    @default(false) @map("is_admin")
   isSuperAdmin Boolean    @default(false) @map("is_super_admin")
-  Basket       Basket[]
-  Order        Order[]
+  basket       Basket[]
+  order        Order[]
   wishlist     wishlist[]
 }
 
@@ -32,8 +32,8 @@ model Product {
   fullDesc        String            @map("full_desc")
   briefDesc       String            @map("brief_desc")
   price           Int
-  ProductCategory ProductCategory[]
-  Basket          Basket[]
+  productCategory ProductCategory[]
+  basket          Basket[]
   orderItem       orderItem[]
   wishlist        wishlist[]
   picture         picture[]
@@ -42,7 +42,7 @@ model Product {
 model Category {
   id              Int               @id @default(autoincrement())
   name            String
-  ProductCategory ProductCategory[]
+  productCategory ProductCategory[]
 }
 
 model ProductCategory {
