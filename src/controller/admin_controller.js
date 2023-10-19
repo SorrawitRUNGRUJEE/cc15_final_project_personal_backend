@@ -2,19 +2,23 @@ const { registerSchema } = require("../validation/auth_validator");
 const {
   productSchema,
   categorySchema,
+  adminSchema
 } = require("../validation/admin_validator");
 const prisma = require("../model/prisma");
 const bcrypt = require("bcryptjs");
+const { upload } = require("../utils/upload");
 const createError = require("../utils/create_error");
+const fs = require("fs/promises");
 
 exports.addAdmin = async (req, res, next) => {
+  // console.log(req.body)
   const { isSuperAdmin } = req.user;
   try {
     if (!isSuperAdmin)
       return res
         .status(401)
         .json({ msg: " you are not authorized to perfom this action" });
-    const { value, error } = registerSchema.validate(req.body);
+    const { value, error } = adminSchema.validate(req.body);
     if (error) return next(error);
 
     const existEmail = await prisma.user.findUnique({
@@ -44,9 +48,10 @@ exports.addAdmin = async (req, res, next) => {
     next(err);
   }
 };
+
 exports.removeAdmin = async (req, res, next) => {
   const { isSuperAdmin } = req.user;
-  const { id, username } = req.body;
+  const {username,id}  = req.params
   try {
     if (!isSuperAdmin)
       return res
@@ -54,7 +59,7 @@ exports.removeAdmin = async (req, res, next) => {
         .json({ msg: " you are not authorized to perfom this action" });
     const exist = await prisma.user.findFirst({
       where: {
-        OR: [{ id: +id || 0 }, { username: username || "" }],
+        OR: [{ id: +id  }, { username: username}],
       },
     });
     if (!exist) return next(createError("this user does not exist", 400));
@@ -82,6 +87,20 @@ exports.removeAdmin = async (req, res, next) => {
     next(err);
   }
 };
+exports.getAllAdmin = async (req,res,next) =>{
+  const result = await prisma.user.findMany({
+    where:{
+      isAdmin:true
+    }
+  })
+
+  for(let i of result){
+    delete i.password
+  }
+  
+  res.status(200).json({msg:"admin get",result})
+
+}
 
 exports.getProduct = async (req, res, next) => {
   try {
@@ -107,7 +126,6 @@ exports.getProduct = async (req, res, next) => {
     next(err);
   }
 };
-
 exports.addProduct = async (req, res, next) => {
   try {
     if (!req.user.isAdmin)
@@ -312,7 +330,6 @@ exports.addProductCategory = async (req, res, next) => {
     console.log(err);
   }
 };
-
 exports.deleteProductCategory = async (req, res, next) => {
   try {
     const { productId, productTitle, categoryName, categoryId } = req.body;
@@ -338,7 +355,7 @@ exports.deleteProductCategory = async (req, res, next) => {
       },
     });
     if (!existProductCategory)
-      return next(createError("this product-category does not exist",400));
+      return next(createError("this product-category does not exist", 400));
     const result = await prisma.productCategory.create({
       data: {
         categoryId: existCategory.id,
@@ -346,9 +363,45 @@ exports.deleteProductCategory = async (req, res, next) => {
       },
     });
 
-    res.status(200).json({ msg: "product category added", result });
+    res.status(200).json({ msg: "product-category removed", result });
+  } catch (err) {
+    next(err);
   }
-  catch(err){
-    next(err)
+};
+
+exports.addProductPhoto = async (req, res, next) => {
+  try {
+    const { productId, productTitle } = req.body;
+    
+   console.log(req.files,productId, productTitle)
+    if (!req.user.isAdmin)
+      return next(createError("you are not authorized to perform this action"));
+    if (!req.files) return next(createError("image required", 400));
+    const existProduct = await prisma.product.findFirst({
+      where: {
+        OR: [{ id: +productId }, { title: productTitle }], 
+      },
+    });
+    
+    if (!existProduct) return next(createError("product not found", 400));
+    const data = { productId: existProduct.id };
+
+    for (i of req.files) {
+      data.picture = await upload(i.path);
+
+      const result = await prisma.picture.create({
+        data: data,
+      });
+    }
+    res.status(200).json({ msg: "picture added" });
+  } catch (err) {
+    next(err);
+  } finally {
+    if (req.files)
+      for (i of req.files) {
+        fs.unlink(i.path);
+      }
   }
-}
+};
+
+exports.deleteProductPhoto = async (req, res, next) => {};

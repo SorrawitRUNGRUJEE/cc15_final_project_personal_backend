@@ -25,6 +25,20 @@ response :
 success => 200 msg : access granted, token, user data
 
 
+addAdmin 
+
+path "/admin/registraion
+method post
+
+body {
+  email
+  username
+  password
+  confirmPassword
+}
+
+response msg : admin added, result
+
 
 
 addProduct
