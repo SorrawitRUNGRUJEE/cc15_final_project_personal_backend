@@ -32,11 +32,14 @@ model Product {
   fullDesc        String            @map("full_desc")
   briefDesc       String            @map("brief_desc")
   price           Int
+  mainPicture     String?           @map("main_picture")
+  secondPicture   String?           @map("seconday_picture")
   productCategory ProductCategory[]
   basket          Basket[]
   orderItem       orderItem[]
   wishlist        wishlist[]
   picture         picture[]
+  featureProduct  featureProduct[]
 }
 
 model Category {
@@ -102,6 +105,12 @@ model wishlist {
 model picture {
   id        Int     @id @default(autoincrement())
   picture   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+}
+
+model featureProduct {
+  id        Int     @id @default(autoincrement())
   product   Product @relation(fields: [productId], references: [id])
   productId Int
 }
