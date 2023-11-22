@@ -61,14 +61,7 @@ exports.getAllCategory = async (req, res, next) => {
     include: {
       productCategory:{
         include:{
-          product:{
-            select:{
-              title:true,
-              mainPicture:true,
-              fullDesc:true,
-              briefDesc:true
-            }
-          }
+          product:true
         }
       }
     }
@@ -97,6 +90,12 @@ exports.setMainPhotoForProduct = async (req,res,next) =>{
     }
   })
 
+  const result = await prisma.product.findUnique({
+    where:{
+      id: existProduct.id
+    }
+  })
+res.status(200).json({result})
 
 }
 exports.setSecondaryPhotoForProduct = async (req,res,next) =>{
@@ -120,11 +119,22 @@ exports.setSecondaryPhotoForProduct = async (req,res,next) =>{
     }
   })
 
+  const result = await prisma.product.findUnique({
+    where:{
+      id: existProduct.id
+    }
+  })
+
+  res.status(200).json({result})
 
 }
 
 exports.getAllPhoto = async (req,res,next) =>{
-  const result =  await prisma.picture.findMany()
+  const result =  await prisma.picture.findMany({
+    include:{
+      product:true
+    }
+  })
   res.status(200).json({result})
 
 }

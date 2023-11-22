@@ -355,7 +355,7 @@ exports.addProductCategory = async (req, res, next) => {
          title: productTitle 
       }
     });
-    console.log(existProduct)
+    
     if (!existProduct) return next(createError("product not found", 400));
     const existCategory = await prisma.category.findUnique({
       where: {
