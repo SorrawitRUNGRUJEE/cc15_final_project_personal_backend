@@ -240,7 +240,6 @@ exports.getCategory  = async (req,res,next) =>{
     }
 
 }
-
 exports.addCategory = async (req, res, next) => {
   try {
     if (!req.user.isAdmin)
@@ -341,8 +340,6 @@ exports.deleteCategory = async (req, res, next) => {
     console.log(err);
   }
 };
-
-
 exports.addProductCategory = async (req, res, next) => {
   try {
     const { productId, productTitle, categoryName, categoryId } = req.body;
@@ -452,7 +449,6 @@ exports.deleteProductCategory = async (req, res, next) => {
     next(err);
   }
 };
-
 exports.getAllPhoto = async (req,res,next) =>{
   const result =  await prisma.picture.findMany()
   res.status(200).json({result})
@@ -526,3 +522,58 @@ exports.deleteProductPhoto = async (req, res, next) => {
 
 
 };
+
+
+exports.approvePayment = async (req,res,next) =>{
+  try{
+    const {id} = req.body
+    await prisma.order.update({
+      where:{
+        id: +id
+      },
+      data:{
+        paymentStatus:true
+      }
+    })
+    const result = await prisma.order.findMany()
+
+    res.status(200).json({msg:"payment confirm",result})
+
+  }
+  catch(err){
+    next(err)
+  }
+
+}
+
+exports.declinePayment = async (req,res,next) =>{
+  try{
+    console.log("DECLINE")
+    const {deId} = req.params
+    await prisma.order.delete({
+      where:{
+        id: +deId
+      }
+    })
+    const result = await prisma.order.findMany()
+    res.status(200).json({result})
+  }
+  catch(err){
+    next(err)
+  }
+  
+
+}
+
+exports.getOrder = async ( req,res,next) =>{
+
+try{
+const result = await prisma.order.findMany({
+})
+
+res.status(200).json({result})
+}catch(err){
+  next(err)
+}
+
+}

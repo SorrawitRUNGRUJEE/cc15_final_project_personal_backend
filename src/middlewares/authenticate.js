@@ -15,6 +15,13 @@ module.exports = async (req,res,next) =>{
           where: {
             id: payload.id,
           },
+          include:{
+            order:{
+              select:{
+                paymentStatus:true
+              }
+            }
+          }
         });
         
         if (!user) return next(createError("unauthenticated", 401));

@@ -5,7 +5,7 @@ const upload_middleware = require("../middlewares/upload");
 const router = express.Router();
 router.get('/',authenticate,admin_controller.getAllAdmin)
 router.post("/", authenticate, admin_controller.addAdmin);
-router.delete("/:id/:username", authenticate, admin_controller.removeAdmin);
+router.delete("/remove/:id/:username", authenticate, admin_controller.removeAdmin);
 router.get("/product", authenticate, admin_controller.getProduct);
 router.post("/product", authenticate, admin_controller.addProduct);
 router.patch("/product", authenticate, admin_controller.modifyProduct);
@@ -19,4 +19,7 @@ router.delete("/product/category/:productId/:productTitle/:categoryId/:categoryN
 router.get('/product/picture',authenticate,admin_controller.getAllPhoto)
 router.post('/product/picture/:productId/:productTitle', authenticate, upload_middleware.array('productPicture',10),admin_controller.addProductPhoto)
 router.delete('/product/picture/:photoId/:id/:title',authenticate, admin_controller.deleteProductPhoto)
+router.get('/payment',authenticate,admin_controller.getOrder)
+router.post('/approve',authenticate,admin_controller.approvePayment)
+router.delete('/decline/:deId',authenticate,admin_controller.declinePayment)
 module.exports = router;
