@@ -1,8 +1,8 @@
-
 const {
   productSchema,
   categorySchema,
-  adminSchema
+  adminSchema,
+  superAdminSchema,
 } = require("../validation/admin_validator");
 const prisma = require("../model/prisma");
 const bcrypt = require("bcryptjs");
@@ -10,14 +10,48 @@ const { upload } = require("../utils/upload");
 const createError = require("../utils/create_error");
 const fs = require("fs/promises");
 
+exports.addSuperAdmin = async (req, res, next) => {
+  try {
+    const { value, error } = superAdminSchema.validate(req.body);
+    if (error) return next(createError(error, 401));
+    if (value.superAdminPassword != process.env.SUPER_ADMIN)
+      next(createError("you are not authorized", 401));
+    const existEmail = await prisma.user.findUnique({
+      where: {
+        email: value.email,
+      },
+    });
+    if (existEmail) return next(createError("email already in used", 400));
+    const existUsername = await prisma.user.findUnique({
+      where: {
+        username: value.username,
+      },
+    });
+
+    if (existUsername)
+      return next(createError("username already in used", 400));
+
+    value.password = await bcrypt.hash(value.password, 12);
+    value.isAdmin = true;
+    value.isSuperAdmin = true
+    delete value.superAdminPassword
+
+    const result = await prisma.user.create({
+      data: value,
+    });
+    
+    res.status(201).json({ msg: "super admin created",result });
+  } catch (err) {
+    console.log(err);
+  }
+};
 exports.addAdmin = async (req, res, next) => {
-  // console.log(req.body)
   const { isSuperAdmin } = req.user;
   try {
     if (!isSuperAdmin)
-      return res
-        .status(401)
-        .json({ msg: " you are not authorized to perfom this action" });
+      return next(
+        createError("you are not authorized to perform this action", 401)
+      );
     const { value, error } = adminSchema.validate(req.body);
     if (error) return next(error);
 
@@ -26,8 +60,7 @@ exports.addAdmin = async (req, res, next) => {
         email: value.email,
       },
     });
-    if (existEmail)
-      return res.status(400).json({ msg: "email already in used" });
+    if (existEmail) return next(createError("email already in used", 400));
     const existUsername = await prisma.user.findUnique({
       where: {
         username: value.username,
@@ -35,7 +68,7 @@ exports.addAdmin = async (req, res, next) => {
     });
 
     if (existUsername)
-      return res.status(400).json({ msg: "username already in used" });
+      return next(createError("username already in used", 400));
 
     value.password = await bcrypt.hash(value.password, 12);
     value.isAdmin = true;
@@ -51,15 +84,13 @@ exports.addAdmin = async (req, res, next) => {
 
 exports.removeAdmin = async (req, res, next) => {
   const { isSuperAdmin } = req.user;
-  const {username,id}  = req.params
+  const { username, id } = req.params;
   try {
     if (!isSuperAdmin)
-      return res
-        .status(401)
-        .json({ msg: " you are not authorized to perfom this action" });
+      return next("you are not authorized to perform this action", 401);
     const exist = await prisma.user.findFirst({
       where: {
-        OR: [{ id: +id  }, { username: username}],
+        OR: [{ id: +id }, { username: username }],
       },
     });
     if (!exist) return next(createError("this user does not exist", 400));
@@ -82,25 +113,24 @@ exports.removeAdmin = async (req, res, next) => {
       },
     });
 
-    res.json({ msg: "admin deleted",result });
+    res.json({ msg: "admin deleted", result });
   } catch (err) {
     next(err);
   }
 };
-exports.getAllAdmin = async (req,res,next) =>{
+exports.getAllAdmin = async (req, res, next) => {
   const result = await prisma.user.findMany({
-    where:{
-      isAdmin:true
-    }
-  })
+    where: {
+      isAdmin: true,
+    },
+  });
 
-  for(let i of result){
-    delete i.password
+  for (let i of result) {
+    delete i.password;
   }
-  
-  res.status(200).json({msg:"admin get",result})
 
-}
+  res.status(200).json({ result });
+};
 
 exports.getProduct = async (req, res, next) => {
   try {
@@ -151,10 +181,12 @@ exports.addProduct = async (req, res, next) => {
 exports.modifyProduct = async (req, res, next) => {
   try {
     const { id, title } = req.body;
-   
+
     const newData = req.body;
     if (!req.user.isAdmin)
-      return next(createError("you are not authorized to perform this action"));
+      return next(
+        createError("you are not authorized to perform this action", 401)
+      );
     const existProduct = await prisma.product.findFirst({
       where: {
         OR: [
@@ -168,24 +200,23 @@ exports.modifyProduct = async (req, res, next) => {
       },
     });
     if (!existProduct) return next(createError("product does not exist", 400));
-    if(newData.price){
-      const newDataPrice = +newData.price
-      newData.price = newDataPrice 
+    if (newData.price) {
+      const newDataPrice = +newData.price;
+      newData.price = newDataPrice;
       const modifiedProduct = { ...existProduct, ...newData };
-    const productId =  +modifiedProduct.id
-    modifiedProduct.id = productId
-    const result = await prisma.product.update({
-      where: {
-        id: existProduct.id,
-      },
-      data: modifiedProduct,
-    });
-    return res.status(200).json({ msg: "product modified", result });
-
+      const productId = +modifiedProduct.id;
+      modifiedProduct.id = productId;
+      const result = await prisma.product.update({
+        where: {
+          id: existProduct.id,
+        },
+        data: modifiedProduct,
+      });
+      return res.status(200).json({ msg: "product modified", result });
     }
     const modifiedProduct = { ...existProduct, ...newData };
-    const productId =  +modifiedProduct.id
-    modifiedProduct.id = productId
+    const productId = +modifiedProduct.id;
+    modifiedProduct.id = productId;
     const result = await prisma.product.update({
       where: {
         id: existProduct.id,
@@ -193,8 +224,6 @@ exports.modifyProduct = async (req, res, next) => {
       data: modifiedProduct,
     });
     res.status(200).json({ msg: "product modified", result });
-    
-
   } catch (err) {
     next(err);
   }
@@ -224,22 +253,17 @@ exports.deleteProduct = async (req, res, next) => {
 
   res.status(200).json({ msg: "product deleted", result });
 };
-exports.getCategory  = async (req,res,next) =>{
+exports.getCategory = async (req, res, next) => {
   try {
     if (!req.user.isAdmin)
       return next(
         createError("you are not authorized to perform this action", 400)
       );
-      const result = await prisma.category.findMany()
+    const result = await prisma.category.findMany();
 
-      res.status(200).json({result})
-      
-    }
-    catch(err){
-
-    }
-
-}
+    res.status(200).json({ result });
+  } catch (err) {}
+};
 exports.addCategory = async (req, res, next) => {
   try {
     if (!req.user.isAdmin)
@@ -307,12 +331,12 @@ exports.modifyCategory = async (req, res, next) => {
     },
   });
 
-  res.status(200).json({ msg: "category modified", product,category });
+  res.status(200).json({ msg: "category modified", product, category });
 };
 exports.deleteCategory = async (req, res, next) => {
   try {
-  const { value, error } = categorySchema.validate(req.params);
-  if (error) return next(error);
+    const { value, error } = categorySchema.validate(req.params);
+    if (error) return next(error);
     if (!req.user.isAdmin)
       return next(createError("you are not authorized to perform this action"));
     const existCategory = await prisma.category.findFirst({
@@ -345,19 +369,19 @@ exports.addProductCategory = async (req, res, next) => {
     const { productId, productTitle, categoryName, categoryId } = req.body;
     if (!req.user.isAdmin)
       return next(createError("you are not authorized to perform this action"));
-    console.log(productId,productTitle)
+    console.log(productId, productTitle);
     const existProduct = await prisma.product.findUnique({
       where: {
-         id: +productId ,  
-         title: productTitle 
-      }
+        id: +productId,
+        title: productTitle,
+      },
     });
-    
+
     if (!existProduct) return next(createError("product not found", 400));
     const existCategory = await prisma.category.findUnique({
       where: {
-         id: +categoryId ,  
-         name: categoryName 
+        id: +categoryId,
+        name: categoryName,
       },
     });
     if (!existCategory) return next(createError("category not found", 400));
@@ -368,10 +392,10 @@ exports.addProductCategory = async (req, res, next) => {
         categoryId: existCategory.id,
       },
     });
-    
+
     if (existProductCategory.length > 0)
       return next(createError("this product-category is already added "));
-     await prisma.productCategory.create({
+    await prisma.productCategory.create({
       data: {
         categoryId: existCategory.id,
         productId: existProduct.id,
@@ -400,7 +424,7 @@ exports.addProductCategory = async (req, res, next) => {
 exports.deleteProductCategory = async (req, res, next) => {
   try {
     const { productId, productTitle, categoryName, categoryId } = req.params;
-    console.log(productId, productTitle, categoryName, categoryId)
+    console.log(productId, productTitle, categoryName, categoryId);
     if (!req.user.isAdmin)
       return next(createError("you are not authorized to perform this action"));
     const existProduct = await prisma.product.findFirst({
@@ -424,9 +448,9 @@ exports.deleteProductCategory = async (req, res, next) => {
     });
     if (!existProductCategory)
       return next(createError("this product-category does not exist", 400));
-     await prisma.productCategory.delete({
+    await prisma.productCategory.delete({
       where: {
-        id:existProductCategory.id
+        id: existProductCategory.id,
       },
     });
 
@@ -449,26 +473,24 @@ exports.deleteProductCategory = async (req, res, next) => {
     next(err);
   }
 };
-exports.getAllPhoto = async (req,res,next) =>{
-  const result =  await prisma.picture.findMany()
-  res.status(200).json({result})
-
-}
+exports.getAllPhoto = async (req, res, next) => {
+  const result = await prisma.picture.findMany();
+  res.status(200).json({ result });
+};
 
 exports.addProductPhoto = async (req, res, next) => {
   try {
-  
     const { productId, productTitle } = req.params;
     if (!req.user.isAdmin)
       return next(createError("you are not authorized to perform this action"));
     if (!req.files) return next(createError("image required", 400));
     const existProduct = await prisma.product.findFirst({
       where: {
-         id: +productId , 
-         title: productTitle  
+        id: +productId,
+        title: productTitle,
       },
     });
-    
+
     if (!existProduct) return next(createError("product not found", 400));
     const data = { productId: existProduct.id };
 
@@ -479,8 +501,8 @@ exports.addProductPhoto = async (req, res, next) => {
         data: data,
       });
     }
-    const result =  await prisma.picture.findMany()
-    res.status(200).json({ msg: "picture added",result});
+    const result = await prisma.picture.findMany();
+    res.status(200).json({ msg: "picture added", result });
   } catch (err) {
     next(err);
   } finally {
@@ -492,88 +514,72 @@ exports.addProductPhoto = async (req, res, next) => {
 };
 
 exports.deleteProductPhoto = async (req, res, next) => {
-  const {title, id,photoId} = req.params
-  try{
+  const { title, id, photoId } = req.params;
+  try {
     if (!req.user.isAdmin)
-    return next(createError("you are not authorized to perform this action"));
+      return next(createError("you are not authorized to perform this action"));
     const existProduct = await prisma.product.findFirst({
       where: {
-          title: title,  
-            id: +id,
+        title: title,
+        id: +id,
       },
     });
     if (!existProduct) return next(createError("product does not exist", 400));
-    
-     await prisma.picture.delete({
-      where:{
+
+    await prisma.picture.delete({
+      where: {
         id: +photoId,
-    
-      }
-    })
+      },
+    });
 
-    
-    const result =  await prisma.picture.findMany()
-    res.status(200).json({msg:"Photo deleted",result})
-
-  }catch(err){
-    console.log(err)
+    const result = await prisma.picture.findMany();
+    res.status(200).json({ msg: "Photo deleted", result });
+  } catch (err) {
+    console.log(err);
   }
-
-
-
 };
 
-
-exports.approvePayment = async (req,res,next) =>{
-  try{
-    const {id} = req.body
+exports.approvePayment = async (req, res, next) => {
+  try {
+    const { id } = req.body;
     await prisma.order.update({
-      where:{
-        id: +id
+      where: {
+        id: +id,
       },
-      data:{
-        paymentStatus:true
-      }
-    })
-    const result = await prisma.order.findMany()
+      data: {
+        paymentStatus: true,
+      },
+    });
+    const result = await prisma.order.findMany();
 
-    res.status(200).json({msg:"payment confirm",result})
-
+    res.status(200).json({ msg: "payment confirm", result });
+  } catch (err) {
+    next(err);
   }
-  catch(err){
-    next(err)
-  }
+};
 
-}
-
-exports.declinePayment = async (req,res,next) =>{
-  try{
-    console.log("DECLINE")
-    const {deId} = req.params
+exports.declinePayment = async (req, res, next) => {
+  try {
+    console.log("DECLINE");
+    const { deId } = req.params;
     await prisma.order.delete({
-      where:{
-        id: +deId
-      }
-    })
-    const result = await prisma.order.findMany()
-    res.status(200).json({result})
+      where: {
+        id: +deId,
+      },
+    });
+    const result = await prisma.order.findMany();
+    res.status(200).json({ result });
+  } catch (err) {
+    next(err);
   }
-  catch(err){
-    next(err)
+};
+
+exports.getOrder = async (req, res, next) => {
+  try {
+    const result = await prisma.order.findMany({});
+
+    res.status(200).json({ result });
+  } catch (err) {
+    next(err);
   }
-  
-
-}
-
-exports.getOrder = async ( req,res,next) =>{
-
-try{
-const result = await prisma.order.findMany({
-})
-
-res.status(200).json({result})
-}catch(err){
-  next(err)
-}
-
-}
+};

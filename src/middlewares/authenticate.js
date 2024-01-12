@@ -14,11 +14,13 @@ module.exports = async (req,res,next) =>{
         const user = await prisma.user.findUnique({
           where: {
             id: payload.id,
+            
           },
           include:{
             order:{
               select:{
-                paymentStatus:true
+                paymentStatus:true,
+                paymentSlip:true
               }
             }
           }

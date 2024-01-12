@@ -7,15 +7,13 @@ const Jwt = require("jsonwebtoken");
 exports.register = async (req, res, next) => {
   try {
     const { value, error } = registerSchema.validate(req.body);
-
     if (error) return next(error);
     const existEmail = await prisma.user.findUnique({
       where: {
         email: value.email,
       },
     });
-    if (existEmail) return res.status(400).json({ msg: "email already in used" });
-    
+    if (existEmail) return next(createError("email already in used",400));
     const existUsername = await prisma.user.findUnique({
       where: {
         username: value.username,
@@ -23,12 +21,11 @@ exports.register = async (req, res, next) => {
     });
 
     if (existUsername)
-      return res.status(400).json({ msg: "username already in used" });
+      return next(createError("username already in used", 400))
     value.password = await bcrypt.hash(value.password, 12);
     await prisma.user.create({
       data: value,
     });
-
     res.status(200).json({ msg: "registration success" });
   } catch (err) {
     next(err);
@@ -64,11 +61,26 @@ exports.getUser = async (req,res,next) =>{
   try{
 
     const {user} = req
-    delete user.password
-    res.json({user:user})
+    
+
+    const order = user.order.filter(el => !el.paymentStatus)
+  
+    const newUser = {...user,order}
+    
+    delete newUser.password
+    res.json({user:newUser})
 }
 catch(err){
     next(createError(err,500))
 }
 
+}
+
+exports.changePassword =  async (req,res,next) =>{
+  try{
+ 
+  }
+  catch(err) {
+    next(err)
+  }
 }

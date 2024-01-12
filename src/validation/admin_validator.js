@@ -17,6 +17,15 @@ const adminSchema = Joi.object({
     password:Joi.string().pattern(/^[a-zA-Z0-9]{6,30}$/).trim().required(),
     confirmPassword: Joi.string().valid(Joi.ref('password')).trim().required().strip(),
 })
+
+const superAdminSchema = Joi.object({
+    email:Joi.string().email().required(),
+    username:Joi.string().trim().required(),
+    password:Joi.string().trim().required(),
+    superAdminPassword:Joi.string().required()
+})
+
+exports.superAdminSchema = superAdminSchema
 exports.productSchema = productSchema
 exports.categorySchema = categorySchema
 exports.adminSchema = adminSchema

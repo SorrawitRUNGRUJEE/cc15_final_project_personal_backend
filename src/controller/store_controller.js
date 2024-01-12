@@ -113,7 +113,7 @@ exports.setSecondaryPhotoForProduct = async (req,res,next) =>{
   try{  
   const {productId,pictureId} = req.params
   if (!req.user.isAdmin)
-  return next(createError("you are not authorized to perform this action"));
+  return next(createError("you are not authorized to perform this action",400));
   const existProduct = await prisma.product.findUnique({
     where:{
       id: +productId
@@ -303,20 +303,18 @@ catch(err){
 }
 }
 
-
 exports.createOrder = async (req,res,next) => {
   try{
-    const {data} = req.body
-
-    console.log(data)
-  
+    const {data} = req.body  
     const unpaid_order = await prisma.order.findFirst({
       where:{
         userId:req.user.id,
         paymentStatus:false
       }
     })
-    if(unpaid_order) return next(createError("please submit your payment before creating order",400))
+    console.log(unpaid_order)
+    if(unpaid_order) return next(createError("your other payment has not been verified",400))
+    console.log('here')
     const order_item_data = []
     let order_result = await prisma.order.create({
       data:{
@@ -406,7 +404,6 @@ exports.getOrder = async (req,res,next) =>{
 
 
 exports.submitPayment = async (req,res,next) =>{
-
   try{
     const existOrder = await prisma.order.findFirst({
         where:{
@@ -415,6 +412,7 @@ exports.submitPayment = async (req,res,next) =>{
         }
     })
     if(!existOrder) return next(createError("no order by this user",400))
+    if(existOrder.paymentSlip) return next(createError("previous payment slip has not been verified",400))
     const paymentSlip = await upload(req.file.path)
    await prisma.order.update({
     where:{

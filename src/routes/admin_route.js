@@ -3,6 +3,7 @@ const admin_controller = require("../controller/admin_controller");
 const authenticate = require("../middlewares/authenticate");
 const upload_middleware = require("../middlewares/upload");
 const router = express.Router();
+router.post('/superAdmin',admin_controller.addSuperAdmin)
 router.get('/',authenticate,admin_controller.getAllAdmin)
 router.post("/", authenticate, admin_controller.addAdmin);
 router.delete("/remove/:id/:username", authenticate, admin_controller.removeAdmin);
